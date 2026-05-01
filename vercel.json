@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/corregir.js": {
+      "maxDuration": 60
+    }
+  }
+}

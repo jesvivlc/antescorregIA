@@ -1,0 +1,12 @@
+{
+  "name": "antescorregIA",
+  "version": "1.0.0",
+  "description": "API REST para corrección automática de tareas de ESO con IA",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0"
+  }
+}
