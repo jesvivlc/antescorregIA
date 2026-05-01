@@ -56,6 +56,14 @@ const OUTPUT_SCHEMA = {
   additionalProperties: false,
 };
 
+/* Detecta el MIME type de una imagen a partir de los primeros bytes en base64 */
+function detectImageMime(base64) {
+  if (base64.startsWith('/9j/'))     return 'image/jpeg';
+  if (base64.startsWith('iVBORw0K')) return 'image/png';
+  if (base64.startsWith('R0lGOD'))   return 'image/gif';
+  return 'image/jpeg'; // fallback razonable
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -70,9 +78,10 @@ export default async function handler(req, res) {
   }
 
   const body = req.body ?? {};
-  const { texto_tarea, nombre_alumno, curso, nombre_tarea, rubrica } = body;
+  const { texto_tarea, archivo_base64, tipo_archivo, nombre_alumno, curso, nombre_tarea, rubrica } = body;
 
-  const camposFaltantes = ['texto_tarea', 'nombre_alumno', 'curso', 'nombre_tarea', 'rubrica']
+  // Campos siempre obligatorios
+  const camposFaltantes = ['nombre_alumno', 'curso', 'nombre_tarea', 'rubrica']
     .filter((campo) => !body[campo] || String(body[campo]).trim() === '');
 
   if (camposFaltantes.length > 0) {
@@ -81,10 +90,46 @@ export default async function handler(req, res) {
     });
   }
 
+  // Se requiere texto_tarea O (archivo_base64 + tipo_archivo)
+  const tieneTexto   = texto_tarea   && String(texto_tarea).trim()   !== '';
+  const tieneArchivo = archivo_base64 && String(archivo_base64).trim() !== '';
+
+  if (!tieneTexto && !tieneArchivo) {
+    return res.status(400).json({
+      error: 'Se requiere "texto_tarea" o bien "archivo_base64" + "tipo_archivo".',
+    });
+  }
+
+  if (tieneArchivo && !['pdf', 'imagen'].includes(tipo_archivo)) {
+    return res.status(400).json({
+      error: '"tipo_archivo" debe ser "pdf" o "imagen".',
+    });
+  }
+
   if (!CURSOS_VALIDOS.includes(curso)) {
     return res.status(400).json({
       error: `El campo "curso" debe ser uno de: ${CURSOS_VALIDOS.join(', ')}`,
     });
+  }
+
+  // Construye el contenido del mensaje según el tipo de entrada
+  const instruccion =
+    `Corrige la tarea de **${nombre_alumno}** (${curso}).\n\n` +
+    `**Nombre de la tarea:** ${nombre_tarea}\n\n` +
+    `**Rúbrica de corrección:**\n${rubrica}`;
+
+  let messageContent;
+  if (tieneArchivo) {
+    const bloqueArchivo = tipo_archivo === 'pdf'
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: archivo_base64 } }
+      : { type: 'image',    source: { type: 'base64', media_type: detectImageMime(archivo_base64), data: archivo_base64 } };
+
+    messageContent = [
+      bloqueArchivo,
+      { type: 'text', text: instruccion + '\n\nEl archivo adjunto contiene el trabajo del alumno. Analízalo íntegramente y corrígelo según la rúbrica.' },
+    ];
+  } else {
+    messageContent = instruccion + `\n\n**Texto del alumno:**\n${texto_tarea}`;
   }
 
   try {
@@ -107,11 +152,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: 'user',
-          content:
-            `Corrige la tarea de **${nombre_alumno}** (${curso}).\n\n` +
-            `**Nombre de la tarea:** ${nombre_tarea}\n\n` +
-            `**Rúbrica de corrección:**\n${rubrica}\n\n` +
-            `**Texto del alumno:**\n${texto_tarea}`,
+          content: messageContent,
         },
       ],
     });
