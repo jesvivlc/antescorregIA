@@ -1,4 +1,6 @@
 {
+  "outputDirectory": "antescorregIA-app",
+  "buildCommand": null,
   "functions": {
     "api/corregir.js": {
       "maxDuration": 120
