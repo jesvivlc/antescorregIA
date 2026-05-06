@@ -6,10 +6,9 @@ Proyecto de uso personal, un solo profesor.
 
 ## Estructura
 antescorregIA/
-├── antescorregIA-app/
-│   └── index.html        ← frontend completo (NO mover)
 ├── api/
 │   └── corregir.js       ← backend Vercel (endpoint de corrección)
+├── index.html            ← frontend completo (en la raíz, NO mover)
 ├── vercel.json
 └── CLAUDE.md
 
@@ -30,7 +29,7 @@ antescorregIA/
 - Campo origen: 'manual' | 'markmate'
 
 ## Reglas importantes
-- El index.html está en antescorregIA-app/ — NO moverlo nunca
+- El index.html está en la raíz del repo — NO moverlo nunca
 - No tocar el vercel.json sin avisar
 - No subir node_modules ni .env a git
 - Las credenciales de Supabase van hardcodeadas en el JS del index.html (proyecto personal, sin backend propio)
