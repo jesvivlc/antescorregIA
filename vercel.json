@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "antescorregIA-app",
   "functions": {
     "api/corregir.js": {
       "maxDuration": 120
