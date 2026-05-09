@@ -783,7 +783,7 @@
   async function loadZip(file) { return JSZip.loadAsync(file); }
 
   function norm(str) {
-    return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
   function versionNum(path) {
