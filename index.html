@@ -668,7 +668,7 @@
   /* ── Supabase ── */
   const SUPABASE_URL = 'https://fyoyyvzyoohsczceeyde.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5b3l5dnp5b29oc2N6Y2VleWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMDM5NjEsImV4cCI6MjA5MzU3OTk2MX0.XA9FV5jEW5L8MGyVcYSsZ7hkynlngDZTcJFjWW48KmE';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   /* ── Estado Cuaderno ── */
   let grupoActual = null;
@@ -1146,7 +1146,7 @@
     const grid = document.getElementById('grupos-grid');
     grid.innerHTML = '<div class="cuaderno-loading"><div class="mini-spinner" style="margin:0 auto 12px;"></div>Cargando grupos…</div>';
     try {
-      const { data, error } = await supabase.from('v_resumen_grupo').select('*').order('nombre');
+      const { data, error } = await sbClient.from('v_resumen_grupo').select('*').order('nombre');
       if (error) throw error;
       if (!data || !data.length) {
         grid.innerHTML = '<div class="cuaderno-empty">No hay grupos todavía.</div>';
@@ -1217,13 +1217,13 @@
   /* ── Carga de datos ── */
   async function cargarDatosGrupo(grupoId) {
     const [{ data: alumnos, error: eA }, { data: tareas, error: eT }] = await Promise.all([
-      supabase.from('alumnos')
+      sbClient.from('alumnos')
         .select('id,nombre,apellidos')
         .eq('grupo_id', grupoId)
         .eq('activo', true)
         .order('apellidos')
         .order('nombre'),
-      supabase.from('tareas')
+      sbClient.from('tareas')
         .select('id,titulo,evaluacion,peso_nota')
         .eq('grupo_id', grupoId)
         .order('created_at'),
@@ -1240,7 +1240,7 @@
     tareasActuales = tareas || [];
 
     if (alumnos.length && tareasActuales.length) {
-      const { data: nd, error: eN } = await supabase
+      const { data: nd, error: eN } = await sbClient
         .from('notas')
         .select('alumno_id,tarea_id,nota,faltas')
         .in('alumno_id', alumnos.map(a => a.id))
@@ -1342,7 +1342,7 @@
     if (faltasVal !== null) payload.faltas = faltasVal;
 
     try {
-      const { error } = await supabase
+      const { error } = await sbClient
         .from('notas')
         .upsert(payload, { onConflict: 'alumno_id,tarea_id' });
       if (error) throw error;
