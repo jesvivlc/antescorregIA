@@ -176,3 +176,4 @@ Luego puedes usar los valores directamente: `body('Analizar_JSON')?['nota']`, et
 - **Prompt caching:** el prompt del sistema se cachea automáticamente para reducir costes en peticiones repetidas
 - **Timeout:** configurado a 60 segundos en Vercel (suficiente para la mayoría de correcciones)
 - **CORS:** habilitado para permitir peticiones desde cualquier origen
+ 
