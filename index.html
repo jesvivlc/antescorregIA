@@ -1146,7 +1146,7 @@
     const grid = document.getElementById('grupos-grid');
     grid.innerHTML = '<div class="cuaderno-loading"><div class="mini-spinner" style="margin:0 auto 12px;"></div>Cargando grupos…</div>';
     try {
-      const { data, error } = await sbClient.from('v_resumen_grupo').select('*').order('nombre');
+      const { data, error } = await sbClient.from('v_resumen_grupo').select('*').order('grupo_nombre');
       if (error) throw error;
       if (!data || !data.length) {
         grid.innerHTML = '<div class="cuaderno-empty">No hay grupos todavía.</div>';
@@ -1164,8 +1164,8 @@
   function renderGrupoCard(g) {
     const media = g.media_general != null ? Number(g.media_general).toFixed(1) : '—';
     const gc    = g.media_general != null ? gradeClass(Number(g.media_general)) : '';
-    return `<div class="grupo-card" data-grupo-id="${g.id}" data-grupo-nombre="${esc(g.nombre)}">
-      <div class="grupo-card-name">${esc(g.nombre)}</div>
+    return `<div class="grupo-card" data-grupo-id="${g.grupo_id}" data-grupo-nombre="${esc(g.grupo_nombre)}">
+      <div class="grupo-card-name">${esc(g.grupo_nombre)}</div>
       <div class="grupo-card-nivel">${esc(g.nivel || '')}${g.anio_academico ? ' · ' + esc(g.anio_academico) : ''}</div>
       <div class="grupo-stats">
         <div class="grupo-stat">
