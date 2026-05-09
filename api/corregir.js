@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 const client = new Anthropic();
 
 const CURSOS_VALIDOS = ['1ESO', '2ESO', '3ESO', '4ESO'];
+const TIPOS_ARCHIVO_VALIDOS = ['pdf', 'jpeg', 'jpg', 'png', 'gif', 'webp'];
 
 // Prompt en caché: estable en todas las peticiones, se cachea automáticamente
 const SYSTEM_PROMPT = `Eres un profesor/a corrector/a de tareas de alumnos de ESO en la Comunitat Valenciana. \
@@ -70,9 +71,9 @@ export default async function handler(req, res) {
   }
 
   const body = req.body ?? {};
-  const { texto_tarea, nombre_alumno, curso, nombre_tarea, rubrica } = body;
+  const { texto_tarea, archivo_base64, tipo_archivo, nombre_alumno, curso, nombre_tarea, rubrica } = body;
 
-  const camposFaltantes = ['texto_tarea', 'nombre_alumno', 'curso', 'nombre_tarea', 'rubrica']
+  const camposFaltantes = ['nombre_alumno', 'curso', 'nombre_tarea', 'rubrica']
     .filter((campo) => !body[campo] || String(body[campo]).trim() === '');
 
   if (camposFaltantes.length > 0) {
@@ -81,10 +82,49 @@ export default async function handler(req, res) {
     });
   }
 
+  const tieneTexto = texto_tarea && String(texto_tarea).trim() !== '';
+  const tieneArchivo = archivo_base64 && String(archivo_base64).trim() !== '';
+
+  if (!tieneTexto && !tieneArchivo) {
+    return res.status(400).json({
+      error: 'Debes enviar texto_tarea o archivo_base64 (con tipo_archivo).',
+    });
+  }
+
+  if (tieneArchivo) {
+    if (!tipo_archivo || String(tipo_archivo).trim() === '') {
+      return res.status(400).json({ error: 'Se requiere tipo_archivo cuando se envía archivo_base64.' });
+    }
+    if (!TIPOS_ARCHIVO_VALIDOS.includes(tipo_archivo)) {
+      return res.status(400).json({
+        error: `El campo "tipo_archivo" debe ser uno de: ${TIPOS_ARCHIVO_VALIDOS.join(', ')}`,
+      });
+    }
+  }
+
   if (!CURSOS_VALIDOS.includes(curso)) {
     return res.status(400).json({
       error: `El campo "curso" debe ser uno de: ${CURSOS_VALIDOS.join(', ')}`,
     });
+  }
+
+  const textoPreamble =
+    `Corrige la tarea de **${nombre_alumno}** (${curso}).\n\n` +
+    `**Nombre de la tarea:** ${nombre_tarea}\n\n` +
+    `**Rúbrica de corrección:**\n${rubrica}\n\n` +
+    `**Texto del alumno:**`;
+
+  let userContent;
+
+  if (tieneArchivo) {
+    const bloqueArchivo =
+      tipo_archivo === 'pdf'
+        ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: archivo_base64 } }
+        : { type: 'image', source: { type: 'base64', media_type: tipo_archivo === 'jpg' ? 'image/jpeg' : `image/${tipo_archivo}`, data: archivo_base64 } };
+
+    userContent = [{ type: 'text', text: textoPreamble }, bloqueArchivo];
+  } else {
+    userContent = `${textoPreamble}\n${texto_tarea}`;
   }
 
   try {
@@ -107,11 +147,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: 'user',
-          content:
-            `Corrige la tarea de **${nombre_alumno}** (${curso}).\n\n` +
-            `**Nombre de la tarea:** ${nombre_tarea}\n\n` +
-            `**Rúbrica de corrección:**\n${rubrica}\n\n` +
-            `**Texto del alumno:**\n${texto_tarea}`,
+          content: userContent,
         },
       ],
     });
