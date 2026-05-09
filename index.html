@@ -6,6 +6,7 @@
   <title>AntescorregIA — Corrector de tareas con IA</title>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -367,12 +368,143 @@
 
     .hidden { display: none !important; }
 
+    /* ── Tabs ── */
+    .tab-nav {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 6px;
+      box-shadow: var(--shadow);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text-muted);
+      background: transparent;
+      transition: all .2s;
+    }
+    .tab-btn:hover { background: var(--bg); color: var(--text); }
+    .tab-btn.active { background: var(--primary); color: white; }
+    .tab-pane { display: flex; flex-direction: column; gap: 24px; }
+
+    /* ── Cuaderno ── */
+    .cuaderno-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .cuaderno-header h2 { font-size: 20px; font-weight: 700; }
+    .grupos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .grupo-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      cursor: pointer;
+      transition: box-shadow .2s, transform .2s;
+      border: 1.5px solid transparent;
+    }
+    .grupo-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); border-color: var(--primary); }
+    .grupo-card-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .grupo-card-nivel { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+    .grupo-stats { display: flex; gap: 20px; }
+    .grupo-stat { display: flex; flex-direction: column; gap: 2px; }
+    .grupo-stat-val { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1; }
+    .grupo-stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); font-weight: 600; }
+    .notas-panel { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .notas-panel-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .notas-panel-header h2 { font-size: 18px; font-weight: 700; margin: 0; }
+    .notas-table-wrapper { overflow-x: auto; max-height: 65vh; overflow-y: auto; }
+    .notas-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .notas-table th {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      z-index: 1;
+    }
+    .notas-table th:first-child { position: sticky; left: 0; z-index: 2; background: var(--bg); }
+    .notas-table td {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .notas-table td:first-child {
+      position: sticky;
+      left: 0;
+      background: white;
+      font-weight: 600;
+      white-space: nowrap;
+      z-index: 1;
+    }
+    .notas-table tr:hover td { background: var(--primary-light); }
+    .notas-table tr:hover td:first-child { background: var(--primary-light); }
+    .cell-inputs { display: flex; align-items: center; gap: 4px; }
+    .input-nota {
+      width: 56px;
+      padding: 5px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      text-align: center;
+      outline: none;
+      transition: border-color .2s, background .3s;
+    }
+    .input-nota:focus { border-color: var(--primary); }
+    .input-faltas {
+      width: 42px;
+      padding: 5px 6px;
+      border: 1.5px solid #FED7AA;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      text-align: center;
+      color: #92400E;
+      outline: none;
+      transition: border-color .2s, background .3s;
+    }
+    .input-faltas:focus { border-color: var(--warning); }
+    .input-nota.saved, .input-faltas.saved { border-color: var(--success); background: #F0FDF4; }
+    .faltas-label { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+    .media-cell { font-weight: 800; font-size: 15px; text-align: center; }
+    .cuaderno-loading { text-align: center; padding: 60px 24px; color: var(--text-muted); }
+    .cuaderno-empty { text-align: center; padding: 60px 24px; color: var(--text-muted); font-size: 15px; }
+
     /* ── Responsive ── */
     @media (max-width: 768px) {
       .form-grid, .config-grid { grid-template-columns: 1fr; }
       .cards-grid { grid-template-columns: 1fr; }
       .form-footer { flex-direction: column; align-items: stretch; }
       .config-grid { grid-template-columns: 1fr; }
+      .grupos-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -389,6 +521,13 @@
 </header>
 
 <main class="container">
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="corrector" onclick="switchTab('corrector')">✏️ Corrector IA</button>
+    <button class="tab-btn" data-tab="cuaderno" onclick="switchTab('cuaderno')">📒 Cuaderno</button>
+  </nav>
+
+  <div id="tab-corrector" class="tab-pane">
 
   <!-- ── CONFIGURACIÓN ── -->
   <details class="config-panel" id="configPanel">
@@ -494,11 +633,49 @@
     <div class="cards-grid" id="cardsGrid"></div>
   </div>
 
+  </div><!-- /tab-corrector -->
+
+  <!-- ── CUADERNO ── -->
+  <div id="tab-cuaderno" class="tab-pane hidden">
+
+    <!-- Vista: lista de grupos -->
+    <div id="cuaderno-grupos">
+      <div class="cuaderno-header">
+        <h2>Mis grupos</h2>
+        <button class="btn btn-secondary btn-sm" onclick="cargarGrupos()">↻ Actualizar</button>
+      </div>
+      <div id="grupos-grid" class="grupos-grid"></div>
+    </div>
+
+    <!-- Vista: alumnos y notas del grupo -->
+    <div id="cuaderno-alumnos" class="hidden">
+      <div class="notas-panel">
+        <div class="notas-panel-header">
+          <button class="btn btn-secondary btn-sm" onclick="volverAGrupos()">← Volver</button>
+          <h2 id="cuaderno-grupo-nombre">—</h2>
+        </div>
+        <div id="cuaderno-tabla-wrapper"></div>
+      </div>
+    </div>
+
+  </div><!-- /tab-cuaderno -->
+
 </main>
 
 <div id="toast" class="toast"></div>
 
 <script>
+  /* ── Supabase ── */
+  const SUPABASE_URL = 'https://fyoyyvzyoohsczceeyde.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5b3l5dnp5b29oc2N6Y2VleWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMDM5NjEsImV4cCI6MjA5MzU3OTk2MX0.XA9FV5jEW5L8MGyVcYSsZ7hkynlngDZTcJFjWW48KmE';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* ── Estado Cuaderno ── */
+  let grupoActual = null;
+  let tareasActuales = [];
+  let notasCache = {};
+  let cellsDirty = new Set();
+
   /* ── Datos en memoria ── */
   let alumnosData = [];   // [{nombre, email}]
   let cardPayloads = {};  // cardId → {alumno, result}
@@ -949,6 +1126,242 @@
   setupDropzone('zipZone',   'zipFile',   /\.zip$/i,         onZipSelected);
   setupDropzone('excelZone', 'excelFile', /\.(xlsx|xls)$/i,  onExcelSelected);
   loadConfig();
+
+  /* ══════════════════════════════════════
+     CUADERNO
+  ══════════════════════════════════════ */
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+    document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+    if (tab === 'cuaderno' && !document.getElementById('grupos-grid').hasChildNodes()) {
+      cargarGrupos();
+    }
+  }
+
+  /* ── Grupos ── */
+  async function cargarGrupos() {
+    const grid = document.getElementById('grupos-grid');
+    grid.innerHTML = '<div class="cuaderno-loading"><div class="mini-spinner" style="margin:0 auto 12px;"></div>Cargando grupos…</div>';
+    try {
+      const { data, error } = await supabase.from('v_resumen_grupo').select('*').order('nombre');
+      if (error) throw error;
+      if (!data || !data.length) {
+        grid.innerHTML = '<div class="cuaderno-empty">No hay grupos todavía.</div>';
+        return;
+      }
+      grid.innerHTML = data.map(renderGrupoCard).join('');
+      grid.querySelectorAll('.grupo-card').forEach(card =>
+        card.addEventListener('click', () => abrirGrupo(card.dataset.grupoId, card.dataset.grupoNombre))
+      );
+    } catch(e) {
+      grid.innerHTML = `<div class="cuaderno-empty">Error al cargar grupos: ${esc(e.message)}</div>`;
+    }
+  }
+
+  function renderGrupoCard(g) {
+    const media = g.media_general != null ? Number(g.media_general).toFixed(1) : '—';
+    const gc    = g.media_general != null ? gradeClass(Number(g.media_general)) : '';
+    return `<div class="grupo-card" data-grupo-id="${g.id}" data-grupo-nombre="${esc(g.nombre)}">
+      <div class="grupo-card-name">${esc(g.nombre)}</div>
+      <div class="grupo-card-nivel">${esc(g.nivel || '')}${g.anio_academico ? ' · ' + esc(g.anio_academico) : ''}</div>
+      <div class="grupo-stats">
+        <div class="grupo-stat">
+          <span class="grupo-stat-val">${g.total_alumnos ?? '—'}</span>
+          <span class="grupo-stat-label">Alumnos</span>
+        </div>
+        <div class="grupo-stat">
+          <span class="grupo-stat-val">${g.total_tareas ?? '—'}</span>
+          <span class="grupo-stat-label">Tareas</span>
+        </div>
+        <div class="grupo-stat">
+          <span class="grupo-stat-val${gc ? ' g-' + gc : ''}">${media}</span>
+          <span class="grupo-stat-label">Media</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* ── Abrir grupo ── */
+  async function abrirGrupo(grupoId, grupoNombre) {
+    grupoActual     = { id: grupoId, nombre: grupoNombre };
+    tareasActuales  = [];
+    notasCache      = {};
+    cellsDirty      = new Set();
+
+    document.getElementById('cuaderno-grupos').classList.add('hidden');
+    document.getElementById('cuaderno-alumnos').classList.remove('hidden');
+    document.getElementById('cuaderno-grupo-nombre').textContent = grupoNombre;
+    document.getElementById('cuaderno-tabla-wrapper').innerHTML =
+      '<div class="cuaderno-loading"><div class="mini-spinner" style="margin:0 auto 12px;"></div>Cargando datos…</div>';
+
+    try {
+      await cargarDatosGrupo(grupoId);
+    } catch(e) {
+      document.getElementById('cuaderno-tabla-wrapper').innerHTML =
+        `<div class="cuaderno-empty">Error al cargar: ${esc(e.message)}</div>`;
+    }
+  }
+
+  function volverAGrupos() {
+    grupoActual    = null;
+    tareasActuales = [];
+    notasCache     = {};
+    cellsDirty     = new Set();
+    document.getElementById('cuaderno-alumnos').classList.add('hidden');
+    document.getElementById('cuaderno-grupos').classList.remove('hidden');
+  }
+
+  /* ── Carga de datos ── */
+  async function cargarDatosGrupo(grupoId) {
+    const [{ data: alumnos, error: eA }, { data: tareas, error: eT }] = await Promise.all([
+      supabase.from('alumnos')
+        .select('id,nombre,apellidos')
+        .eq('grupo_id', grupoId)
+        .eq('activo', true)
+        .order('apellidos')
+        .order('nombre'),
+      supabase.from('tareas')
+        .select('id,titulo,evaluacion,peso_nota')
+        .eq('grupo_id', grupoId)
+        .order('created_at'),
+    ]);
+    if (eA) throw eA;
+    if (eT) throw eT;
+
+    if (!alumnos || !alumnos.length) {
+      document.getElementById('cuaderno-tabla-wrapper').innerHTML =
+        '<div class="cuaderno-empty">Este grupo no tiene alumnos activos.</div>';
+      return;
+    }
+
+    tareasActuales = tareas || [];
+
+    if (alumnos.length && tareasActuales.length) {
+      const { data: nd, error: eN } = await supabase
+        .from('notas')
+        .select('alumno_id,tarea_id,nota,faltas')
+        .in('alumno_id', alumnos.map(a => a.id))
+        .in('tarea_id',  tareasActuales.map(t => t.id));
+      if (eN) throw eN;
+      (nd || []).forEach(n => {
+        notasCache[`${n.alumno_id}_${n.tarea_id}`] = { nota: n.nota, faltas: n.faltas };
+      });
+    }
+
+    renderTablaAlumnos(alumnos);
+  }
+
+  /* ── Tabla notas ── */
+  function renderTablaAlumnos(alumnos) {
+    if (!tareasActuales.length) {
+      document.getElementById('cuaderno-tabla-wrapper').innerHTML =
+        '<div class="cuaderno-empty">Este grupo no tiene tareas creadas.</div>';
+      return;
+    }
+
+    const cols = tareasActuales.map(t =>
+      `<th title="${esc(t.titulo)}">${esc(t.titulo.length > 18 ? t.titulo.slice(0, 16) + '…' : t.titulo)}${t.evaluacion ? `<br><small style="font-weight:400;font-size:10px;color:var(--text-muted)">${esc(t.evaluacion)}</small>` : ''}</th>`
+    ).join('');
+
+    const rows = alumnos.map(a => {
+      const cells = tareasActuales.map(t => {
+        const key   = `${a.id}_${t.id}`;
+        const n     = notasCache[key] || {};
+        const nota  = n.nota   != null ? n.nota   : '';
+        const faltas = n.faltas != null ? n.faltas : '';
+        return `<td><div class="cell-inputs">
+          <input class="input-nota" type="number" min="0" max="10" step="0.1"
+            value="${nota}" placeholder="—"
+            data-alumno="${a.id}" data-tarea="${t.id}" data-campo="nota"
+            onchange="onInputChange(this)" onblur="guardarNota(this)">
+          <span class="faltas-label">F</span>
+          <input class="input-faltas" type="number" min="0" step="1"
+            value="${faltas}" placeholder="0"
+            data-alumno="${a.id}" data-tarea="${t.id}" data-campo="faltas"
+            onchange="onInputChange(this)" onblur="guardarNota(this)">
+        </div></td>`;
+      }).join('');
+
+      const media = calcularMedia(a.id);
+      const gc    = media !== null ? gradeClass(media) : '';
+      return `<tr>
+        <td>${esc((a.apellidos ? a.apellidos + ', ' : '') + a.nombre)}</td>
+        ${cells}
+        <td class="media-cell g-${gc}" id="media-${a.id}">${media !== null ? media.toFixed(1) : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('cuaderno-tabla-wrapper').innerHTML = `
+      <div class="notas-table-wrapper">
+        <table class="notas-table">
+          <thead><tr><th>Alumno</th>${cols}<th>Media</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function calcularMedia(alumnoId) {
+    const notas = tareasActuales
+      .map(t => notasCache[`${alumnoId}_${t.id}`]?.nota)
+      .filter(n => n != null && n !== '');
+    if (!notas.length) return null;
+    return notas.reduce((s, n) => s + Number(n), 0) / notas.length;
+  }
+
+  /* ── Edición de celdas ── */
+  function onInputChange(input) {
+    const key   = `${input.dataset.alumno}_${input.dataset.tarea}`;
+    const campo = input.dataset.campo;
+    if (!notasCache[key]) notasCache[key] = {};
+    const val = input.value.trim();
+    notasCache[key][campo] = val === '' ? null : Number(val);
+    cellsDirty.add(key);
+  }
+
+  async function guardarNota(input) {
+    const alumnoId = input.dataset.alumno;
+    const tareaId  = input.dataset.tarea;
+    const key      = `${alumnoId}_${tareaId}`;
+    if (!cellsDirty.has(key)) return;
+
+    const cached   = notasCache[key] || {};
+    const notaVal  = cached.nota   != null ? Number(cached.nota)   : null;
+    const faltasVal = cached.faltas != null ? Number(cached.faltas) : null;
+
+    if (notaVal === null && faltasVal === null) { cellsDirty.delete(key); return; }
+    if (notaVal !== null && (notaVal < 0 || notaVal > 10)) {
+      showToast('La nota debe estar entre 0 y 10', 'error');
+      return;
+    }
+
+    const payload = { alumno_id: alumnoId, tarea_id: tareaId, origen: 'manual' };
+    if (notaVal   !== null) payload.nota   = notaVal;
+    if (faltasVal !== null) payload.faltas = faltasVal;
+
+    try {
+      const { error } = await supabase
+        .from('notas')
+        .upsert(payload, { onConflict: 'alumno_id,tarea_id' });
+      if (error) throw error;
+
+      cellsDirty.delete(key);
+      input.classList.add('saved');
+      setTimeout(() => input.classList.remove('saved'), 1500);
+
+      const media = calcularMedia(alumnoId);
+      const gc    = media !== null ? gradeClass(media) : '';
+      const mediaCell = document.getElementById(`media-${alumnoId}`);
+      if (mediaCell) {
+        mediaCell.textContent = media !== null ? media.toFixed(1) : '—';
+        mediaCell.className   = `media-cell g-${gc}`;
+      }
+    } catch(e) {
+      showToast('Error al guardar: ' + e.message, 'error');
+    }
+  }
 </script>
 </body>
 </html>
