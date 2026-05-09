@@ -808,6 +808,7 @@
              parts.some(p => norm(p).includes(nTask));
     });
 
+    console.log('Buscando:', nStudent, '| Archivos ZIP:', Object.keys(zip.files).slice(0,10));
     if (!candidates.length) return null;
 
     /* Prefer latest version */
