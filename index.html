@@ -823,6 +823,7 @@
 
   /* ── API ── */
   async function corregirAlumno(payload) {
+    console.log('Tamaño base64:', payload.archivo_base64?.length, 'chars, ~', (payload.archivo_base64?.length * 0.75 / 1024 / 1024).toFixed(2), 'MB');
     const resp = await fetch('https://antescorregia.vercel.app/api/corregir', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
