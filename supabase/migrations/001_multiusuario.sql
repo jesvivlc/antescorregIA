@@ -81,7 +81,7 @@ revoke insert, update, delete on public.pagos from anon, authenticated;
 create table if not exists public.uso_ia (
   id                    bigint generated always as identity primary key,
   user_id               uuid references auth.users(id) on delete set null,
-  tipo                  text not null,            -- 'correccion' | 'rubrica'
+  tipo                  text not null,            -- 'correccion' | 'rubrica' | 'email'
   modelo                text,
   input_tokens          integer,
   output_tokens         integer,
