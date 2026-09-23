@@ -808,7 +808,6 @@
              parts.some(p => norm(p).includes(nTask));
     });
 
-    console.log('Buscando:', nStudent, '| Archivos ZIP:', Object.keys(zip.files).slice(0,10));
     if (!candidates.length) return null;
 
     /* Prefer latest version */
@@ -823,7 +822,6 @@
 
   /* ── API ── */
   async function corregirAlumno(payload) {
-    console.log('Tamaño base64:', payload.archivo_base64?.length, 'chars, ~', (payload.archivo_base64?.length * 0.75 / 1024 / 1024).toFixed(2), 'MB');
     const resp = await fetch('https://antescorregia.vercel.app/api/corregir', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -7,6 +7,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.52.0"
+    "@anthropic-ai/sdk": "^0.128.0",
+    "@supabase/supabase-js": "^2.117.1",
+    "stripe": "^22.6.2"
   }
 }
